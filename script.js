@@ -1,39 +1,39 @@
 // ============================================================
-// Timed Typing Test — script.js
+// TYPIST — script.js
 // ============================================================
 
-// ── DOM References ──────────────────────────────────────────
-const testWrapper  = document.querySelector(".test-wrapper");
+// ── DOM References ───────────────────────────────────────────
 const testArea     = document.querySelector("#test-area");
-const originTextEl = document.querySelector("#origin-text p");
+const originTextEl = document.querySelector("#origin-text-p");
 const resetButton  = document.querySelector("#reset");
-const theTimer     = document.querySelector(".timer");
+const theTimer     = document.querySelector("#timer");
 const wpmDisplay   = document.querySelector("#wpm");
 const errorDisplay = document.querySelector("#error-count");
 const scoresList   = document.querySelector("#scores-list");
+const cardInput    = document.querySelector(".card--input");
 
-// ── Text Paragraphs (Content Randomization) ─────────────────
+// ── Text Paragraphs (Content Randomization) ──────────────────
 const paragraphs = [
   "The quick brown fox jumps over the lazy dog near the riverbank at dusk, while the birds sing softly in the distance.",
   "A network packet travels through routers and switches, each hop bringing it closer to its destination across the internet.",
   "Digital forensics requires a methodical approach: preserve the evidence, document every step, and let the data tell the story.",
-  "Red teams simulate adversaries to expose weaknesses, while blue teams defend and respond — together they form the purple team.",
+  "Red teams simulate adversaries to expose weaknesses, while blue teams defend and respond, together they form the purple team.",
   "Every great codebase starts with a single function, written carefully, tested thoroughly, and refactored with purpose over time.",
   "The camera shutter opens for a fraction of a second, freezing motion and light into a memory that outlasts the moment.",
   "Penetration testers think like attackers so that defenders can build walls strong enough to withstand the real thing.",
 ];
 
-// ── State Variables ──────────────────────────────────────────
-let timerInterval  = null;   // holds the setInterval reference
-let startTime      = null;   // timestamp when typing began
-let isRunning      = false;  // is the timer currently ticking
-let errorCount     = 0;      // mistakes made this session
-let currentText    = "";     // the active paragraph to type
+// ── State ────────────────────────────────────────────────────
+let timerInterval = null;
+let startTime     = null;
+let isRunning     = false;
+let errorCount    = 0;
+let currentText   = "";
 
 // ── Helpers ──────────────────────────────────────────────────
 
 /**
- * Pads a number to at least 2 digits (e.g. 7 → "07").
+ * Pads a number to at least 2 digits (e.g. 7 becomes "07").
  * @param {number} n
  * @returns {string}
  */
@@ -42,29 +42,41 @@ function addLeadingZero(n) {
 }
 
 /**
- * Picks a random paragraph, avoiding repeating the same one twice.
+ * Picks a random paragraph, avoiding consecutive repeats.
  * @returns {string}
  */
 function getRandomParagraph() {
-  let newText;
+  let pick;
   do {
-    newText = paragraphs[Math.floor(Math.random() * paragraphs.length)];
-  } while (newText === currentText && paragraphs.length > 1);
-  return newText;
+    pick = paragraphs[Math.floor(Math.random() * paragraphs.length)];
+  } while (pick === currentText && paragraphs.length > 1);
+  return pick;
 }
 
-// ── Timer Functions ──────────────────────────────────────────
+/**
+ * Applies a state class to the textarea and card strip, removing others.
+ * @param {string} state - "correct" | "error" | "done" | ""
+ */
+function setInputState(state) {
+  testArea.classList.remove("state-correct", "state-error", "state-done");
+  cardInput.classList.remove("state-correct", "state-error", "state-done");
+  if (state) {
+    testArea.classList.add("state-" + state);
+    cardInput.classList.add("state-" + state);
+  }
+}
+
+// ── Timer ────────────────────────────────────────────────────
 
 /**
- * Updates the on-screen timer display (MM:SS:HH).
+ * Repaints the timer display from elapsed milliseconds.
  */
 function updateTimerDisplay() {
   const totalHundredths = Math.floor((Date.now() - startTime) / 10);
-  const hundredths = totalHundredths % 100;
+  const hundredths  = totalHundredths % 100;
   const totalSeconds = Math.floor(totalHundredths / 100);
   const seconds = totalSeconds % 60;
   const minutes = Math.floor(totalSeconds / 60);
-
   theTimer.textContent =
     addLeadingZero(minutes) + ":" +
     addLeadingZero(seconds) + ":" +
@@ -72,7 +84,7 @@ function updateTimerDisplay() {
 }
 
 /**
- * Starts the interval-based timer.
+ * Starts the interval-based timer on first keystroke.
  */
 function startTimer() {
   if (isRunning) return;
@@ -82,7 +94,7 @@ function startTimer() {
 }
 
 /**
- * Stops the timer and returns elapsed seconds as a float.
+ * Stops the timer and returns total elapsed seconds.
  * @returns {number}
  */
 function stopTimer() {
@@ -92,85 +104,78 @@ function stopTimer() {
   return (Date.now() - startTime) / 1000;
 }
 
-// ── WPM Calculation ──────────────────────────────────────────
+// ── WPM ──────────────────────────────────────────────────────
 
 /**
- * Standard WPM formula: (chars / 5) / (seconds / 60)
- * @param {number} charCount
+ * Standard WPM formula: (characters / 5) / (seconds / 60).
+ * @param {number} chars
  * @param {number} seconds
  * @returns {number}
  */
-function calcWPM(charCount, seconds) {
+function calcWPM(chars, seconds) {
   if (seconds === 0) return 0;
-  return Math.round((charCount / 5) / (seconds / 60));
+  return Math.round((chars / 5) / (seconds / 60));
 }
 
-// ── Text Matching & Visual Feedback ─────────────────────────
+// ── Text Matching ────────────────────────────────────────────
 
 /**
- * Runs on every input event. Handles:
- *  - Timer start on first keystroke
- *  - Error counting
- *  - Border color feedback (grey / blue / red / green)
- *  - Live WPM display
- *  - Completion detection
+ * Fires on every input event. Starts the timer, tracks errors,
+ * updates visual state, live WPM, and detects test completion.
  */
 function matchText() {
   const typed  = testArea.value;
   const origin = currentText;
 
-  // Start the timer on the very first keystroke
-  if (!isRunning && typed.length > 0) {
-    startTimer();
-  }
+  // Kick off timer on first character
+  if (!isRunning && typed.length > 0) startTimer();
 
-  // Count mismatched characters up to the length typed
+  // Count characters typed that differ from origin
   let errors = 0;
   for (let i = 0; i < typed.length; i++) {
-    if (typed[i] !== origin[i]) {
-      errors++;
-    }
+    if (typed[i] !== origin[i]) errors++;
   }
 
-  // Increment session error counter whenever new mistakes appear
+  // Accumulate session error total
   if (errors > errorCount) {
     errorCount = errors;
     errorDisplay.textContent = errorCount;
+    errorDisplay.classList.add("has-errors");
   }
 
-  // ── Border color feedback ──
+  // Border and textarea visual state
   if (typed.length === 0) {
-    testWrapper.style.borderColor = "grey";
+    setInputState("");
   } else if (errors > 0 || typed.length > origin.length) {
-    testWrapper.style.borderColor = "#e74c3c"; // red/orange — typo detected
+    setInputState("error");
   } else {
-    testWrapper.style.borderColor = "#3498db"; // blue — matching correctly
+    setInputState("correct");
   }
 
-  // Live WPM update while typing
+  // Live WPM update
   if (isRunning) {
     const elapsed = (Date.now() - startTime) / 1000;
     wpmDisplay.textContent = calcWPM(typed.length, elapsed);
   }
 
-  // ── Completion: typed string matches origin exactly ──
+  // Completion: exact match
   if (typed === origin) {
     const totalSeconds = stopTimer();
     const finalWPM = calcWPM(origin.length, totalSeconds);
 
-    testWrapper.style.borderColor = "#2ecc71"; // green — test complete!
+    setInputState("done");
     wpmDisplay.textContent = finalWPM;
-    testArea.disabled = true; // lock textarea after completion
+    testArea.disabled = true;
 
     saveScore(totalSeconds, finalWPM);
     renderScores();
   }
 }
 
-// ── Local Storage — Top 3 Scores ────────────────────────────
+// ── Local Storage ────────────────────────────────────────────
 
 /**
- * Loads scores array from localStorage.
+ * Retrieves the scores array from localStorage.
  * @returns {Array<{time: number, wpm: number}>}
  */
 function loadScores() {
@@ -182,66 +187,70 @@ function loadScores() {
 }
 
 /**
- * Adds a new score and persists only the top 3 fastest times.
- * @param {number} time - elapsed seconds
- * @param {number} wpm  - words per minute
+ * Persists a new score, keeping only the top 3 fastest times.
+ * @param {number} time
+ * @param {number} wpm
  */
 function saveScore(time, wpm) {
   const scores = loadScores();
   scores.push({ time, wpm });
-  scores.sort((a, b) => a.time - b.time); // sort ascending by time (fastest first)
+  scores.sort((a, b) => a.time - b.time);
   localStorage.setItem("typingScores", JSON.stringify(scores.slice(0, 3)));
 }
 
 /**
- * Renders the current top 3 scores into the scoreboard list.
+ * Renders the top 3 scores into the scoreboard list element.
  */
 function renderScores() {
   const scores = loadScores();
   scoresList.innerHTML = "";
 
   if (scores.length === 0) {
-    scoresList.innerHTML = "<li>No scores yet — finish a test!</li>";
+    scoresList.innerHTML = '<li class="scores-empty">No records yet. Finish a test to set one.</li>';
     return;
   }
 
+  const rankLabels = ["01", "02", "03"];
+  const rankClasses = ["score-rank--first", "score-rank--second", "score-rank--third"];
+
   scores.forEach((score, index) => {
-    // Convert decimal seconds back to MM:SS:HH for display
     const totalHundredths = Math.round(score.time * 100);
-    const hundredths = totalHundredths % 100;
-    const totalSecs  = Math.floor(totalHundredths / 100);
-    const secs       = totalSecs % 60;
-    const mins       = Math.floor(totalSecs / 60);
-    const timeStr    = addLeadingZero(mins) + ":" + addLeadingZero(secs) + ":" + addLeadingZero(hundredths);
+    const hundredths  = totalHundredths % 100;
+    const totalSecs   = Math.floor(totalHundredths / 100);
+    const secs        = totalSecs % 60;
+    const mins        = Math.floor(totalSecs / 60);
+    const timeStr     = addLeadingZero(mins) + ":" + addLeadingZero(secs) + ":" + addLeadingZero(hundredths);
 
     const li = document.createElement("li");
-    li.innerHTML = `<span class="rank">#${index + 1}</span> ${timeStr} &mdash; <strong>${score.wpm} WPM</strong>`;
+    li.innerHTML =
+      `<span class="score-rank ${rankClasses[index]}">${rankLabels[index]}</span>` +
+      `<span class="score-time">${timeStr}</span>` +
+      `<span class="score-wpm">${score.wpm} wpm</span>`;
     scoresList.appendChild(li);
   });
 }
 
-// ── Reset Logic ──────────────────────────────────────────────
+// ── Reset ────────────────────────────────────────────────────
 
 /**
- * Clears all state, resets the UI, and loads a new random paragraph.
+ * Clears all state and UI, loads a fresh random paragraph.
  */
 function resetTest() {
   if (isRunning) stopTimer();
 
-  // Reset all state variables
   isRunning     = false;
   errorCount    = 0;
   timerInterval = null;
 
-  // Reset all UI elements
-  theTimer.textContent          = "00:00:00";
-  testArea.value                = "";
-  testArea.disabled             = false;
-  testWrapper.style.borderColor = "grey";
-  wpmDisplay.textContent        = "0";
-  errorDisplay.textContent      = "0";
+  theTimer.textContent     = "00:00:00";
+  testArea.value           = "";
+  testArea.disabled        = false;
+  wpmDisplay.textContent   = "0";
+  errorDisplay.textContent = "0";
+  errorDisplay.classList.remove("has-errors");
 
-  // Load a new random paragraph into the origin-text element
+  setInputState("");
+
   currentText = getRandomParagraph();
   originTextEl.textContent = currentText;
 
@@ -250,10 +259,10 @@ function resetTest() {
 
 // ── Event Listeners ──────────────────────────────────────────
 
-testArea.addEventListener("input", matchText);   // check text on every keystroke
-resetButton.addEventListener("click", resetTest); // reset button handler
+testArea.addEventListener("input", matchText);
+resetButton.addEventListener("click", resetTest);
 
-// ── Initialization ───────────────────────────────────────────
+// ── Init ─────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
   currentText = getRandomParagraph();
