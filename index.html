@@ -10,6 +10,9 @@
 </head>
 <body>
 
+  <canvas id="bg-canvas"></canvas>
+  <div class="completion-flash" id="completion-flash"></div>
+
   <div class="site-frame">
 
     <header class="site-header">
@@ -31,7 +34,7 @@
 
       <section class="card card--input">
         <div class="card-label">your input</div>
-        <div class="test-wrapper" id="test-wrapper">
+        <div class="test-wrapper">
           <textarea
             id="test-area"
             rows="5"
@@ -41,7 +44,6 @@
             autocapitalize="off"
             placeholder="Start typing to begin the test..."
           ></textarea>
-          <div class="border-indicator" id="border-indicator"></div>
         </div>
       </section>
 
@@ -74,7 +76,6 @@
       </section>
 
     </main>
-
   </div>
 
   <script src="script.js"></script>
