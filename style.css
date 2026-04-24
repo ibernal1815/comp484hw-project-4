@@ -1,6 +1,5 @@
 /* ==========================================================
    TYPIST — style.css
-   Dark, terminal-adjacent. Sharp. Intentional.
    ========================================================== */
 
 *, *::before, *::after {
@@ -10,34 +9,49 @@
 }
 
 :root {
-  --ink:        #0e0e10;
-  --ink-soft:   #1a1a1f;
-  --ink-mid:    #2a2a32;
-  --line:       #3a3a45;
-  --text-dim:   #6b6b7e;
-  --text-mid:   #a0a0b8;
-  --text-main:  #e8e8f0;
-  --text-bright:#ffffff;
-  --accent:     #7c6af7;
-  --accent-dim: #4a3fb0;
-  --ok:         #3dd68c;
-  --err:        #f56565;
-  --warn:       #f5a623;
-  --mono:       'Space Mono', 'Courier New', monospace;
-  --sans:       'DM Sans', system-ui, sans-serif;
+  --ink:          #08090d;
+  --ink-soft:     #0f1117;
+  --ink-mid:      #1c1e2a;
+  --line:         #252736;
+  --line-bright:  #353850;
+  --text-dim:     #4a4d66;
+  --text-mid:     #8b8fa8;
+  --text-main:    #d4d6e8;
+  --text-bright:  #f0f1f8;
+  --accent:       #7c6af7;
+  --accent-glow:  rgba(124, 106, 247, 0.18);
+  --accent-dim:   #4a3fb0;
+  --ok:           #3dd68c;
+  --ok-glow:      rgba(61, 214, 140, 0.15);
+  --err:          #f56565;
+  --err-glow:     rgba(245, 101, 101, 0.13);
+  --mono:         'Space Mono', 'Courier New', monospace;
+  --sans:         'DM Sans', system-ui, sans-serif;
 }
 
-html {
-  font-size: 16px;
-}
+html { font-size: 16px; }
 
 body {
-  background-color: var(--ink);
+  background: var(--ink);
   color: var(--text-main);
   font-family: var(--sans);
   font-weight: 400;
   line-height: 1.6;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ==========================================================
+   Background canvas
+   ========================================================== */
+
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* ==========================================================
@@ -45,9 +59,11 @@ body {
    ========================================================== */
 
 .site-frame {
+  position: relative;
+  z-index: 1;
   max-width: 680px;
   margin: 0 auto;
-  padding: 0 1.25rem 4rem;
+  padding: 0 1.25rem 5rem;
 }
 
 /* ==========================================================
@@ -58,6 +74,7 @@ body {
   padding: 2.5rem 0 2rem;
   border-bottom: 1px solid var(--line);
   margin-bottom: 2rem;
+  animation: fadeDown 0.6s ease both;
 }
 
 .header-inner {
@@ -84,10 +101,16 @@ body {
   width: 10px;
   height: 10px;
   background: var(--accent);
+  animation: pulse-block 3s ease-in-out infinite;
+}
+
+@keyframes pulse-block {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.75); }
 }
 
 .header-sub {
-  font-size: 0.825rem;
+  font-size: 0.8rem;
   color: var(--text-dim);
   letter-spacing: 0.04em;
   font-weight: 300;
@@ -113,96 +136,130 @@ body {
   border-radius: 6px;
   padding: 1.25rem 1.5rem;
   position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+  animation: fadeUp 0.5s ease both;
 }
 
-.card-label {
-  font-family: var(--mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-dim);
-  margin-bottom: 0.75rem;
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.12s; }
+.card:nth-child(3) { animation-delay: 0.19s; }
+.card:nth-child(4) { animation-delay: 0.26s; }
+
+/* Scanline shimmer on card hover */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255,255,255,0.012) 2px,
+    rgba(255,255,255,0.012) 4px
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
-/* Accent strip on left edge of cards */
+.card:hover::after { opacity: 1; }
+
+/* Left accent strip */
 .card::before {
   content: '';
   position: absolute;
   left: 0;
-  top: 1rem;
-  bottom: 1rem;
+  top: 0;
+  bottom: 0;
   width: 2px;
-  background: var(--ink-mid);
-  border-radius: 0 2px 2px 0;
-  transition: background 0.3s ease;
+  background: var(--line-bright);
+  border-radius: 0;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card--input.state-correct::before {
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.card--input.state-error::before {
+  background: var(--err);
+  box-shadow: 0 0 12px var(--err-glow);
+}
+
+.card--input.state-done::before {
+  background: var(--ok);
+  box-shadow: 0 0 12px var(--ok-glow);
+}
+
+.card-label {
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
 }
 
 /* ==========================================================
    Prompt card
    ========================================================== */
 
-.card--prompt #origin-text-p {
+#origin-text-p {
   font-family: var(--mono);
   font-size: 0.9375rem;
-  line-height: 1.75;
+  line-height: 1.8;
   color: var(--text-mid);
   user-select: none;
+  transition: color 0.3s ease;
 }
 
 /* ==========================================================
-   Input card
+   Input card / textarea
    ========================================================== */
-
-.test-wrapper {
-  position: relative;
-}
 
 #test-area {
   width: 100%;
   background: var(--ink);
   border: 1px solid var(--line);
   border-radius: 4px;
-  color: var(--text-main);
+  color: var(--text-bright);
   font-family: var(--mono);
   font-size: 0.9375rem;
-  line-height: 1.75;
+  line-height: 1.8;
   padding: 0.875rem 1rem;
   resize: none;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
   caret-color: var(--accent);
 }
 
-#test-area::placeholder {
-  color: var(--text-dim);
-}
+#test-area::placeholder { color: var(--text-dim); }
 
-#test-area:focus {
-  border-color: var(--line);
-}
-
-/* State: correct */
 #test-area.state-correct {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(124, 106, 247, 0.12);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* State: error */
 #test-area.state-error {
   border-color: var(--err);
-  box-shadow: 0 0 0 3px rgba(245, 101, 101, 0.1);
+  box-shadow: 0 0 0 3px var(--err-glow);
+  animation: shake 0.25s ease;
 }
 
-/* State: complete */
 #test-area.state-done {
   border-color: var(--ok);
-  box-shadow: 0 0 0 3px rgba(61, 214, 140, 0.1);
+  box-shadow: 0 0 0 3px var(--ok-glow);
 }
 
-#test-area.state-correct ~ .card::before,
-.card--input.state-correct::before  { background: var(--accent); }
-.card--input.state-error::before    { background: var(--err); }
-.card--input.state-done::before     { background: var(--ok); }
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-4px); }
+  50%  { transform: translateX(4px); }
+  75%  { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
 
 /* ==========================================================
    Stats card
@@ -216,13 +273,11 @@ body {
   padding: 1rem 1.5rem;
 }
 
-.stat-block--timer {
-  flex: 1 1 auto;
-}
+.stat-block--timer { flex: 1 1 auto; }
 
 .stat-label {
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: 0.575rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-dim);
@@ -237,12 +292,13 @@ body {
   color: var(--text-bright);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
 }
 
-.stat-group {
-  display: flex;
-  gap: 1.25rem;
-}
+.timer.running { color: var(--accent); }
+.timer.done    { color: var(--ok); }
+
+.stat-group { display: flex; gap: 1.25rem; }
 
 .stat-value {
   font-family: var(--mono);
@@ -251,15 +307,20 @@ body {
   color: var(--text-bright);
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  transition: color 0.3s ease;
 }
 
-.stat-value--errors {
-  color: var(--text-bright);
-  transition: color 0.2s ease;
+.stat-value--errors.has-errors { color: var(--err); }
+
+/* Number pop animation when value changes */
+.stat-value.pop {
+  animation: numPop 0.15s ease;
 }
 
-.stat-value--errors.has-errors {
-  color: var(--err);
+@keyframes numPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 /* ==========================================================
@@ -272,27 +333,25 @@ body {
   gap: 0.5rem;
   margin-left: auto;
   background: transparent;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-bright);
   border-radius: 4px;
   color: var(--text-mid);
   cursor: pointer;
   font-family: var(--mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
   padding: 0.5rem 0.875rem;
   text-transform: uppercase;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, transform 0.1s;
 }
 
 .reset-btn:hover {
   border-color: var(--accent);
   color: var(--text-bright);
-  background: rgba(124, 106, 247, 0.08);
+  background: var(--accent-glow);
 }
 
-.reset-btn:active {
-  transform: scale(0.97);
-}
+.reset-btn:active { transform: scale(0.96); }
 
 .reset-icon {
   display: inline-block;
@@ -302,7 +361,10 @@ body {
   border-right-color: transparent;
   border-radius: 50%;
   position: relative;
+  transition: transform 0.3s ease;
 }
+
+.reset-btn:hover .reset-icon { transform: rotate(-180deg); }
 
 .reset-icon::after {
   content: '';
@@ -322,7 +384,6 @@ body {
 
 .scores-list {
   list-style: none;
-  counter-reset: score-counter;
 }
 
 .scores-list li {
@@ -334,22 +395,31 @@ body {
   font-family: var(--mono);
   font-size: 0.875rem;
   color: var(--text-mid);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-.scores-list li:last-child {
-  border-bottom: none;
+.scores-list li:last-child { border-bottom: none; }
+
+/* New score slides in */
+.scores-list li.new-score {
+  animation: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 .scores-empty {
-  font-size: 0.8125rem;
+  font-size: 0.8rem;
   color: var(--text-dim);
-  font-family: var(--mono);
+  font-style: italic;
   padding: 0.25rem 0;
 }
 
 .score-rank {
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-dim);
   min-width: 2rem;
@@ -359,10 +429,7 @@ body {
 .score-rank--second { color: var(--text-mid); }
 .score-rank--third  { color: var(--text-dim); }
 
-.score-time {
-  color: var(--text-main);
-  flex: 1;
-}
+.score-time { color: var(--text-main); flex: 1; }
 
 .score-wpm {
   font-weight: 700;
@@ -370,24 +437,39 @@ body {
 }
 
 /* ==========================================================
-   Completion banner (injected by JS)
+   Completion flash overlay
    ========================================================== */
 
-.complete-banner {
-  background: rgba(61, 214, 140, 0.06);
-  border: 1px solid rgba(61, 214, 140, 0.25);
-  border-radius: 4px;
-  padding: 0.6rem 1rem;
-  font-family: var(--mono);
-  font-size: 0.8125rem;
-  color: var(--ok);
-  letter-spacing: 0.04em;
-  margin-top: 0.75rem;
-  display: none;
+.completion-flash {
+  position: fixed;
+  inset: 0;
+  background: var(--ok);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 999;
 }
 
-.complete-banner.visible {
-  display: block;
+.completion-flash.flash {
+  animation: flashFade 0.5s ease forwards;
+}
+
+@keyframes flashFade {
+  0%   { opacity: 0.12; }
+  100% { opacity: 0; }
+}
+
+/* ==========================================================
+   Page enter animations
+   ========================================================== */
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* ==========================================================
@@ -398,5 +480,4 @@ body {
   .timer { font-size: 1.75rem; }
   .card--stats { gap: 1rem; }
   .reset-btn { margin-left: 0; }
-  .header-inner { gap: 0.75rem; }
 }
