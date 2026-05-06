@@ -23,6 +23,17 @@ const paragraphs = [
   "Every great codebase starts with a single function, written carefully, tested thoroughly, and refactored with purpose over time.",
   "The camera shutter opens for a fraction of a second, freezing motion and light into a memory that outlasts the moment.",
   "Penetration testers think like attackers so that defenders can build walls strong enough to withstand the real thing.",
+  "A SIEM ingests logs from across the network and correlates events in real time, giving analysts the visibility they need to act.",
+  "The race car holds the apex through the corner, trading speed for grip, then unleashes everything down the straight.",
+  "Memory forensics lets investigators pull encryption keys, running processes, and open connections straight from a RAM dump.",
+  "A well-placed bodyweight pull-up works more muscle groups than most people realize, demanding full control on the way down.",
+  "Malware often hides in plain sight, masquerading as a legitimate process while quietly exfiltrating data in the background.",
+  "Exposure triangle mastered: ISO controls sensitivity, aperture controls depth, and shutter speed controls motion — balance all three.",
+  "A SOC analyst triages hundreds of alerts per shift, learning quickly that not every alarm is a fire worth fighting.",
+  "Synthesizers layer oscillators, filters, and envelopes to sculpt sound from silence into something that feels alive.",
+  "Logs without context are noise; logs with correlation, timestamps, and source mapping become actionable threat intelligence.",
+  "The trail climbs through switchbacks before opening onto a ridge where the entire valley spreads out below like a map.",
+  "Static analysis examines code without executing it, hunting for vulnerabilities before a single instruction ever runs.",
 ];
 
 // ── State ────────────────────────────────────────────────────
