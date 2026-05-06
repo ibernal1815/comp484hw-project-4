@@ -349,8 +349,14 @@ function calcWPM(chars, seconds) {
 // ── Text Matching ─────────────────────────────────────────────
 
 /**
- * Runs on every input event. Starts the timer, counts errors,
- * drives visual state, plays sounds, and detects completion.
+ * Sanitization note: no explicit trim() is needed here.
+ * The completion condition (typed === origin) requires a character-perfect
+ * match against currentText, which is pulled directly from the paragraphs
+ * array — none of which have leading or trailing spaces.
+ * 
+ * This means if a user types an extra space at the end, typed !== origin
+ * and the test simply won't complete. The strict equality check acts as
+ * implicit sanitization — garbage in, no completion out.
  */
 function matchText() {
   const typed  = testArea.value;
@@ -425,6 +431,9 @@ function matchText() {
 
 /**
  * Loads scores from localStorage.
+ * JSON.parse converts the stored string back into a usable JS array.
+ * If nothing is saved yet (null) or the data is corrupted, we fall
+ * back to an empty array so the rest of the code never crashes.
  * @returns {Array<{time: number, wpm: number}>}
  */
 function loadScores() {
@@ -434,9 +443,13 @@ function loadScores() {
 }
 
 /**
- * Saves a score, keeping only the top 3 fastest times.
- * @param {number} time
- * @param {number} wpm
+ * Saves a new score and keeps only the top 3 fastest times.
+ * JSON.stringify serializes the array into a string because
+ * localStorage can only store text — no raw objects.
+ * We sort numerically (a.time - b.time) so shortest time ranks first.
+ * slice(0, 3) enforces the 3-score cap before writing back.
+ * @param {number} time - elapsed seconds
+ * @param {number} wpm  - words per minute at completion
  */
 function saveScore(time, wpm) {
   const scores = loadScores();
